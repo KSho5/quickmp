@@ -76,6 +76,24 @@ NB_MODULE(_quickmp, m)
           Matrix profile
     )doc");
 
+    m.def("selfjoin_nonnorm", [](const_pyarr_t T, size_t m) {
+        size_t n = T.shape(0);
+        std::vector<double> P(n - m + 1);
+
+        selfjoin_nonnorm(T.data(), P.data(), n, m);
+
+        return pyarr_t(P.data(), {P.size()}).cast();
+    }, "T"_a, "m"_a, R"doc(
+        Compute the non-normalized matrix profile for time series T.
+
+        Args:
+          T: Time series
+          m: Window size
+
+        Returns:
+          Matrix profile
+    )doc");
+
     m.def("abjoin", [](const_pyarr_t T1, const_pyarr_t T2, size_t m) {
         size_t n1 = T1.shape(0);
         size_t n2 = T2.shape(0);

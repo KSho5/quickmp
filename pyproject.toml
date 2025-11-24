@@ -18,7 +18,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-    "numpy>=1.24.0"
+    "numpy>=1.24.0",
+    "pytest>=8.3.5",
+    "stumpy>=1.13.0",
 ]
 
 [project.optional-dependencies]

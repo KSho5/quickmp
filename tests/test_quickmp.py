@@ -39,6 +39,17 @@ def test_selfjoin(n, m):
 
     assert np.allclose(mp, mp2)
 
+
+@pytest.mark.parametrize("n,m", [(100, 10), (500, 20), (1000, 100)])
+def test_selfjoin_nonnorm(n, m):
+    T = np.random.rand(n)
+
+    mp = quickmp.selfjoin_nonnorm(T, m)
+    mp2 = stumpy.stump(T, m, normalize=False)[:, 0].astype(np.float64)
+
+    assert np.allclose(mp, mp2)
+
+
 @pytest.mark.parametrize("n,m", [(100, 10), (500, 20), (1000, 100)])
 def test_abjoin(n, m):
     T1 = np.random.rand(n)

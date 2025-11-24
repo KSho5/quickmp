@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "quickmp.hpp"
 
@@ -67,6 +68,66 @@ void selfjoin(const double *__restrict _T, double *__restrict _P, size_t n, size
     delete[] QT2;
     delete[] mu;
     delete[] sigma_inv;
+}
+
+void selfjoin_nonnorm(const double *__restrict _T, double *__restrict _P, size_t n, size_t m)
+{
+    size_t excl_zone = std::ceil(m / 4.0);
+
+    // Note: This is a workaround. icpx ignores __restrict on arugments in some situations.
+    const double *__restrict T = _T;
+    double *__restrict P = _P;
+
+    double *__restrict QT = new double[n - m + 1];
+    double *__restrict QT2 = new double[n - m + 1];
+    double *__restrict sum_sq = new double[n - m + 1];
+
+    compute_sum_sq(T, sum_sq, n, m);
+
+    // TODO: Use sliding_dot_product_fft if m is large
+    sliding_dot_product_naive(T, T, QT, n, m);
+
+    for (size_t j = 0; j < n - m + 1; j++) {
+        double dist_sq = std::max(0.0, sum_sq[0] - 2.0 * QT[j] + sum_sq[j]);
+        P[j] = dist_sq;
+    }
+
+    for (size_t j = 0; j < excl_zone + 1; j++) {
+        P[j] = std::numeric_limits<double>::infinity();
+    }
+
+    for (size_t j = excl_zone + 1; j < n - m + 1; j++) {
+        P[0] = std::min(P[0], P[j]);
+    }
+
+    for (size_t i = 1; i < n - m + 1; i++) {
+        double min_pi = P[i];
+
+        for (size_t j = i + excl_zone + 1; j < n - m + 1; j++) {
+            // Calculate sliding dot product
+            QT2[j] = QT[j - 1] - T[j - 1] * T[i - 1] + T[j + m - 1] * T[i + m - 1];
+
+            // Calculate squared distance
+            double dist_sq = std::max(0.0, sum_sq[i] - 2.0 * QT2[j] + sum_sq[j]);
+
+            // Update matrix profile
+            P[j] = std::min(P[j], dist_sq);
+
+            min_pi = std::min(min_pi, dist_sq);
+        }
+
+        P[i] = min_pi;
+
+        std::swap(QT, QT2);
+    }
+
+    for (size_t i = 0; i < n - m + 1; i++) {
+        P[i] = std::sqrt(P[i]);
+    }
+
+    delete[] QT;
+    delete[] QT2;
+    delete[] sum_sq;
 }
 
 // For each subsequence in T1, returns its nearest neighbor in T2
